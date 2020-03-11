@@ -162,11 +162,99 @@ app.get('/create', (req, res) => {
 });
 
 app.get('/list', (req, res) => {
-    paypal.billingPlan.list({}, (error, plans) => {
+    paypal.billingPlan.list({'status': 'ACTIVE'}, (error, plans) => {
         if(error){
             console.log(error);
         }else{
             res.json(plans);
+        }
+    });
+});
+
+app.get('/active/:id', (req, res) => {
+    var changes = [{
+        "op": "replace",
+        "path": "/",
+        "value": {
+            "state": "ACTIVE"
+        }
+    }]
+
+    paypal.billingPlan.update(req.params.id, changes, (err, result) => {
+        if(err){
+            console.log(err);
+        }else{
+            res.send("Change done!")
+        }
+    });
+});
+
+app.post('/sub', (req, res) => {
+    var email = req.body.email;
+    var planId = "P-4G442942YE293244XY7BHOKY";
+
+    var isoDate = new Date(Date.now());
+    isoDate.setSeconds(isoDate.getSeconds() + 4);
+    isoDate.toISOString().slice(0, 19) + 'Z';
+
+    var signUpData = {
+        "name": "Silver Plan SignUp",
+        "description": "PayPal payment agreement",
+        "start_date": isoDate,
+        "payer": {
+            "payment_method": "paypal"
+        },
+        "plan": {
+            "id": planId
+        },
+        "override_merchant_preferences": {
+            "return_url": `http://localhost:45567/subreturn?email=${email}`,
+            "cancel_url": "https://example.com/cancel"
+        }
+    }
+
+    paypal.billingAgreement.create(signUpData, (error, signUp) => {
+        if(error){
+            console.log(error);
+        }else{
+            res.json(signUp);
+        }
+    });
+
+});
+
+app.get('/subreturn', (req, res) => {
+    var email = req.query.email;
+    var token = req.query.token;
+
+    paypal.billingAgreement.execute(token, {}, (error, signUp) => {
+        if(error){
+            console.log(error)
+        }else{
+            res.json(signUp);
+        }
+    });
+});
+
+app.get('/info/:id', (req, res) => {
+    var id = req.params.id;
+    paypal.billingAgreement.get(id,(error, signUp) => {
+        if(error){
+            console.log(error);
+        }else{
+            res.json(signUp);
+        }    
+    });
+});
+
+app.get("/cancel/:id", (req, res) => {
+    var id = req.params.id;
+
+    paypal.billingAgreement.cancel(id, {"note":"Clent desagreement!"},(error, response) => {
+        if(error){
+            console.log(error);
+        }else{
+            res.send("cancelled subscription!");
         }
     });
 });
