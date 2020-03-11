@@ -108,6 +108,69 @@ app.get("/final", (req, res) => {
     });
 });
 
+app.get('/create', (req, res) => {
+    var plan = {
+        "name": "Silver Plan",
+        "description": "A very cheap and much good plan!",
+        "merchant_preferences": {
+            "auto_bill_amount": "yes",
+            "cancel_url": "http://www.cancel.com",
+            "initial_fail_amount_action": "continue",
+            "max_fail_attempts": "1",
+            "return_url": "http://www.success.com",
+            "setup_fee": {
+                "currency": "BRL",
+                "value": "0"
+            }
+        },
+        "payment_definitions": [
+            {
+                "amount": {
+                    "currency": "BRL",
+                    "value": "0"
+                },
+                "cycles": "7",
+                "frequency": "DAY",
+                "frequency_interval": "1",
+                "name": "Free Test",
+                "type": "TRIAL"
+            },
+            {
+                "amount": {
+                    "currency": "BRL",
+                    "value": "25"
+                },
+                "cycles": "0",
+                "frequency": "MONTH",
+                "frequency_interval": "1",
+                "name": "Regular Silver",
+                "type": "REGULAR"
+            }            
+        ],
+        "type": "INFINITE"
+    }
+
+    paypal.billingPlan.create(plan,(err, plan) => {
+
+        if(err){
+            console.log(err)
+        }else{
+            console.log(plan);
+            res.json(plan);
+        }
+    });
+});
+
+app.get('/list', (req, res) => {
+    paypal.billingPlan.list({}, (error, plans) => {
+        if(error){
+            console.log(error);
+        }else{
+            res.json(plans);
+        }
+    });
+});
+
 app.listen(45567, () => {
     console.log("Running!")
 })
